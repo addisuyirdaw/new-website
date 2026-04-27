@@ -22,6 +22,7 @@ import { Contact } from "./components/Pages/Contact";
 import { ReportsInbox } from "./components/Pages/ReportsInbox";
 import { CommunicationLog } from "./components/Pages/CommunicationLog";
 import { CollaborationHub } from "./pages/CollaborationHub";
+import ChatAssistant from "./components/ChatAssistant";
 import "./index.css";
 
 function AppContent() {
@@ -188,6 +189,7 @@ function AppContent() {
           },
         }}
       />
+      <ChatAssistant />
     </Router>
   );
 }

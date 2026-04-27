@@ -18,6 +18,7 @@ const postRoutes = require("./routes/posts");
 const contactRoutes = require("./routes/contact");
 const reportRoutes = require("./routes/reports");
 const messageRoutes = require("./routes/messages");
+const aiRoutes = require("./routes/ai");
 
 // Import middleware
 const errorHandler = require("./middleware/errorHandler");
@@ -99,6 +100,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/ai", aiRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {

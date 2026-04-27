@@ -518,6 +518,14 @@ class ApiService {
       body: JSON.stringify(contactData)
     });
   }
+
+  // AI Assistant Endpoints
+  async sendChatMessage(message) {
+    return this.request('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message })
+    });
+  }
 }
 
 export const apiService = new ApiService();
