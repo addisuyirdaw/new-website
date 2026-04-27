@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Club = require('../models/Club');
 const Feedback = require('../models/Feedback');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 exports.processChatQuery = async (req, res) => {
   try {
@@ -21,63 +22,52 @@ exports.processChatQuery = async (req, res) => {
       });
     }
 
-    // Core Identity
-    const systemPrompt = "Hello! I am the DBU Student Union Pilot Assistant for the '21' system.";
-
-    // 1. Coordinators & Academic Affairs (Admin search)
-    if (
-      lowerMsg.includes('coordinator') || 
-      lowerMsg.includes('academic') || 
-      lowerMsg.includes('affair') ||
-      lowerMsg.includes('dbu10101021') ||
-      lowerMsg.includes('admin')
-    ) {
-      const admins = await User.find({
-        role: { $in: ['academic_affairs', 'clubs_coordinator'] }
-      }).select('name email department role username');
-
-      if (admins.length > 0) {
-        const staffDocs = admins.map(admin => {
-            const title = admin.role === 'academic_affairs' ? 'Academic Affairs Admin' : 'Clubs Coordinator';
-            return `- Name: ${admin.name}, Title: ${title}, Email: ${admin.email}, Department: ${admin.department}`;
-        }).join('\n');
-        return res.status(200).json({ success: true, answer: `${systemPrompt} Here is the contact info for the requested administrative staff:\n${staffDocs}` });
-      }
-    }
-
-    // 2. Club Search based on message contents
-    const activeClubs = await Club.find({ status: 'active' }).select('name category description');
-
-    // Soft match based on unique words in club names
-    let matchedClubs = activeClubs.filter(club => {
-       if (lowerMsg.includes(club.name.toLowerCase())) return true;
-       
-       const clubWords = club.name.toLowerCase().replace('club', '').replace('association', '').trim().split(' ');
-       return clubWords.some(w => w.length > 2 && lowerMsg.includes(w));
-    });
-
-    const isGenericClubQuery = lowerMsg === 'club' || lowerMsg === 'clubs' || lowerMsg === 'list clubs' || lowerMsg === 'show clubs';
-
-    if (matchedClubs.length > 0 && !isGenericClubQuery) {
-      const clubNames = matchedClubs.map(c => `- ${c.name} (${c.category}): ${c.description}`).join('\n');
-      return res.status(200).json({ success: true, answer: `${systemPrompt} I found the following club details matching your query:\n${clubNames}` });
-    }
-
-    if (lowerMsg.includes('club')) {
-      if (activeClubs.length === 0) {
-         return res.status(200).json({ success: true, answer: `${systemPrompt} There are currently no active clubs available.` });
-      }
-      const clubNames = activeClubs.map(c => `- ${c.name} (${c.category})`).join('\n');
-      return res.status(200).json({ success: true, answer: `${systemPrompt} Here are the active clubs:\n${clubNames}` });
-    }
-
-    // Default Fallback: Add to Feedback
-    await Feedback.create({ query: message });
+    // 1. Data Fetching (RAG Context)
+    // Fetch clubs to inject into the system prompt
+    const clubs = await Club.find({}).select('name category description status');
     
-    return res.status(200).json({
-      success: true,
-      answer: `${systemPrompt} I'm currently unable to answer that question. Your query has been logged and our team will use it to improve my knowledge in the future!`
-    });
+    // Also fetch staff/admins if requested, to make it fully DB-aware
+    const admins = await User.find({
+      role: { $in: ['academic_affairs', 'clubs_coordinator'] }
+    }).select('name email department role');
+
+    // 2. System Prompt Injection
+    const dbData = {
+      clubs: clubs,
+      faculty_and_coordinators: admins
+    };
+
+    const systemPrompt = `You are the DBU Student Union Pilot Assistant. Here is the CURRENT list of clubs and staff from our database: ${JSON.stringify(dbData)}. Use this data to answer user questions. If a club isn't in this list, say we don't have information on it yet. Always be professional and supportive of DBU students.`;
+
+    // 3. AI Generation (Gemini/OpenAI) using Environment Safety (API Keys from .env)
+    if (process.env.GEMINI_API_KEY) {
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      
+      // We pass the System Prompt via systemInstruction (supported in flash model)
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction: systemPrompt 
+      });
+
+      const result = await model.generateContent(message);
+      const responseText = result.response.text();
+
+      return res.status(200).json({ success: true, answer: responseText });
+      
+    } else {
+      // Fallback behavior if developer hasn't put API key in yet
+      console.log('--- RAG SYSTEM PROMPT INJECTION ---');
+      console.log(systemPrompt);
+      console.log('-----------------------------------');
+      
+      // Still attempt to log to feedback if it's not a greeting
+      await Feedback.create({ query: message });
+      
+      return res.status(200).json({ 
+        success: true, 
+        answer: `[API Keys Missing] I fetched ${clubs.length} clubs and ${admins.length} admins from the database to use as context for Gemini! \n\nPlease add your GEMINI_API_KEY to the backend .env file to enable full AI responses. Your query has been safely logged.` 
+      });
+    }
 
   } catch (error) {
     console.error('AI Controller Error:', error);

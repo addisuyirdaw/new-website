@@ -611,6 +611,22 @@ export function Clubs() {
     }
   };
 
+  const getClubImage = (club) => {
+    if (club.image && club.image.trim().length > 0) return club.image;
+
+    // Try exact match
+    if (DEFAULT_LOGOS[club.name]) return DEFAULT_LOGOS[club.name];
+    
+    // Try fuzzy match
+    const nameLower = club.name.toLowerCase();
+    for (const [key, logo] of Object.entries(DEFAULT_LOGOS)) {
+       if (nameLower.includes(key.toLowerCase())) return logo;
+    }
+
+    // Final fallback to public image from the project root
+    return "/images/dblogo.png";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -976,7 +992,7 @@ export function Clubs() {
 
                   <div className="relative">
                     <img
-                      src={club.image || DEFAULT_LOGOS[club.name] || ""}
+                      src={getClubImage(club)}
                       alt={club.name}
                       className="w-full h-48 object-cover bg-gray-200"
                     />

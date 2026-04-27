@@ -18,19 +18,17 @@ const ChatAssistant = () => {
     if (isOpen) {
       scrollToBottom();
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isLoading]);
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
+  const sendMessage = async (text) => {
+    if (!text.trim()) return;
 
-    const userMessage = inputValue.trim();
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setMessages(prev => [...prev, { role: 'user', text: text.trim() }]);
     setInputValue('');
     setIsLoading(true);
 
     try {
-      const response = await apiService.sendChatMessage(userMessage);
+      const response = await apiService.sendChatMessage(text.trim());
       if (response && response.answer) {
         setMessages(prev => [...prev, { role: 'assistant', text: response.answer }]);
       } else {
@@ -43,7 +41,18 @@ const ChatAssistant = () => {
     }
   };
 
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    sendMessage(inputValue);
+  };
+
   const toggleChat = () => setIsOpen(!isOpen);
+
+  const suggestions = [
+    "What clubs are available?",
+    "How do I report a complaint?",
+    "Election help."
+  ];
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
@@ -51,7 +60,7 @@ const ChatAssistant = () => {
       {isOpen && (
         <div className="bg-white rounded-xl shadow-2xl flex flex-col w-80 sm:w-96 h-[500px] mb-4 border border-gray-200 overflow-hidden transform transition-all duration-300">
           {/* Header */}
-          <div className="bg-blue-600 text-white p-4 flex justify-between items-center shadow-md">
+          <div className="bg-blue-600 text-white p-4 flex justify-between items-center shadow-md shrink-0">
             <div>
               <h3 className="font-bold text-lg">DBU Pilot Assistant</h3>
               <p className="text-blue-100 text-xs">Always here to help</p>
@@ -80,20 +89,36 @@ const ChatAssistant = () => {
               </div>
             ))}
             {isLoading && (
-              <div className="bg-white text-gray-800 border border-gray-200 self-start rounded-lg rounded-bl-none shadow-sm p-3 max-w-[85%]">
-                <div className="flex space-x-1 items-center h-4 px-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+              <div className="bg-white text-gray-500 border border-gray-200 self-start rounded-lg rounded-bl-none shadow-sm p-3 max-w-[85%] flex items-center space-x-2 text-sm italic">
+                <span>Pilot is thinking</span>
+                <div className="flex space-x-1 items-center h-4">
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="p-3 bg-white border-t border-gray-200 shrink-0">
-            <form onSubmit={handleSendMessage} className="flex space-x-2">
+          {/* Quick Suggestions & Input Area */}
+          <div className="bg-white border-t border-gray-200 shrink-0">
+            {/* Quick Suggestions */}
+            {messages.length < 3 && !isLoading && (
+              <div className="px-3 pt-3 flex flex-wrap gap-2">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => sendMessage(suggestion)}
+                    className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 border border-blue-200 rounded-full px-3 py-1.5 transition-colors shadow-sm"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            <form onSubmit={handleSendMessage} className="flex space-x-2 p-3">
               <input
                 type="text"
                 value={inputValue}
