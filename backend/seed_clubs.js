@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const Club = require('./models/Club');
 const path = require('path');

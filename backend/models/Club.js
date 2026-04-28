@@ -118,6 +118,10 @@ const clubSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'pending_approval', 'suspended'],
     default: 'pending_approval'
   },
+  representative: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   contactEmail: {
     type: String,
     lowercase: true,

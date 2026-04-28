@@ -3,7 +3,7 @@ const Club = require('../models/Club');
 const User = require('../models/User');
 const { protect, adminOnly, optionalAuth, clubLeader } = require('../middleware/auth');
 const { validateClub } = require('../middleware/validation');
-
+const nodemailer = require('nodemailer');
 const router = express.Router();
 
 // @desc    Get all clubs
@@ -41,6 +41,7 @@ router.get('/', optionalAuth, async (req, res) => {
       .populate('leadership.vicePresident', 'name email profileImage')
       .populate('leadership.secretary', 'name email profileImage')
       .populate('leadership.treasurer', 'name email profileImage')
+      .populate('representative')
       .sort({ name: 1 })
       .skip(skip)
       .limit(limit);
@@ -130,7 +131,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
       .populate('leadership.vicePresident', 'name email studentId profileImage')
       .populate('leadership.secretary', 'name email studentId profileImage')
       .populate('leadership.treasurer', 'name email studentId profileImage')
-      .populate('events.attendees', 'name email profileImage');
+      .populate('events.attendees', 'name email profileImage')
+      .populate('representative', 'name email profileImage');
 
     if (!club) {
       return res.status(404).json({
@@ -679,6 +681,7 @@ router.patch('/:id/assign-leader', protect, async (req, res) => {
 
     // Update club leadership
     club.leadership.president = user._id;
+    club.representative = user._id;
 
     // Add to members if not already there, and ensure approved status
     const existingMember = club.members.find(m => m.user.toString() === userId.toString());
@@ -697,6 +700,37 @@ router.patch('/:id/assign-leader', protect, async (req, res) => {
     }
 
     await club.save();
+
+    // Send confirmation email via nodemailer
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      });
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: `Congratulations! You are the new Representative of ${club.name}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <h2 style="color: #4F46E5;">Congratulations, ${user.name}!</h2>
+            <p>We are thrilled to inform you that you have been officially selected as the President and Representative of <strong>${club.name}</strong>.</p>
+            <p>We believe in your leadership and look forward to the positive impact you will bring to the community. As the representative, you now have access to manage the club's profile, review member applications, and submit reports.</p>
+            <br/>
+            <p>Best regards,<br/>DBU Student Union Coordinators</p>
+          </div>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log('Representative email sent successfully to', user.email);
+    } catch (mailError) {
+      console.error('Failed to send representative email:', mailError);
+    }
 
     res.json({
       success: true,

@@ -4,7 +4,7 @@ import { apiService } from '../services/api';
 const ChatAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: "Hello! I am the DBU Student Union Pilot Assistant for the '21' system. How can I help you today?" }
+    { role: 'assistant', text: "Hello! I am the DBU Chatbot Assistant for the '21' system. How can I help you today?" }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +35,7 @@ const ChatAssistant = () => {
         setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I received an invalid response from the server." }]);
       }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting to the network. Please try again later." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "DBU Chatbot Assistant is currently calibrating its Antigravity sensors. System authorization (API Key) is required to restore full orbit." }]);
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +62,7 @@ const ChatAssistant = () => {
           {/* Header */}
           <div className="bg-blue-600 text-white p-4 flex justify-between items-center shadow-md shrink-0">
             <div>
-              <h3 className="font-bold text-lg">DBU Pilot Assistant</h3>
+              <h3 className="font-bold text-lg">DBU Chatbot Assistant</h3>
               <p className="text-blue-100 text-xs">Always here to help</p>
             </div>
             <div className="flex items-center space-x-2">
@@ -90,7 +90,7 @@ const ChatAssistant = () => {
             ))}
             {isLoading && (
               <div className="bg-white text-gray-500 border border-gray-200 self-start rounded-lg rounded-bl-none shadow-sm p-3 max-w-[85%] flex items-center space-x-2 text-sm italic">
-                <span>Pilot is thinking</span>
+                <span>Assistant is thinking</span>
                 <div className="flex space-x-1 items-center h-4">
                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>

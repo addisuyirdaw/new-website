@@ -1337,6 +1337,10 @@ export function Clubs() {
                       <p><span className="font-medium">Founded:</span> {selectedClubDetails.founded}</p>
                       <p><span className="font-medium">Total Members:</span> {Array.isArray(selectedClubDetails.members) ? selectedClubDetails.members.filter(m => m.status === 'approved').length : (selectedClubDetails.members || 0)}</p>
                       <p><span className="font-medium">Status:</span> {selectedClubDetails.status}</p>
+                      <p>
+                        <span className="font-medium">Representative:</span>{" "}
+                        {selectedClubDetails?.representative ? selectedClubDetails.representative?.name || selectedClubDetails.representative?.fullName || 'No Name' : 'No Representative Assigned'}
+                      </p>
                       {selectedClubDetails.website && (
                         <p>
                           <span className="font-medium">Website:</span>
@@ -1390,7 +1394,12 @@ export function Clubs() {
                         {Array.isArray(selectedClubDetails.members) && selectedClubDetails.members.filter(m => m.status === 'approved').length > 0 ? (
                           selectedClubDetails.members.filter(m => m.status === 'approved').map((member, idx) => (
                             <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
-                              <td className="px-4 py-3 font-medium text-gray-900">{member.fullName || member.user?.name || "Member"}</td>
+                              <td className="px-4 py-3 font-medium text-gray-900">
+                                {member.fullName || member.user?.name || "Member"}
+                                {selectedClubDetails?.representative && String(member.user?._id || member.user) === String(selectedClubDetails.representative?._id || selectedClubDetails.representative) && (
+                                    <span className="ml-2 bg-blue-100 text-blue-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">Representative</span>
+                                )}
+                              </td>
                               <td className="px-4 py-3 text-gray-500">@{member.user?.username || member.username || "---"}</td>
                               <td className="px-4 py-3 text-gray-600">{member.department || "General"}</td>
                               <td className="px-4 py-3 text-gray-600">{member.year || "---"}</td>
